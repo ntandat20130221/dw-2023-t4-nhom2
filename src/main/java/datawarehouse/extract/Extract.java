@@ -4,16 +4,13 @@ import datawarehouse.DatabaseConnection;
 import datawarehouse.PropertyManager;
 import datawarehouse.Utils;
 import datawarehouse.models.Config;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
@@ -48,7 +45,6 @@ public class Extract {
                 conn.updateProcessStatus(prop.get(PROP_PROCESS_EXTRACT), prop.get(PROP_BEGIN_EXTRACT));
             }
         }
-
         // 7. Read config data from config table.
         var config = conn.getConfig();
         if (config == null) return;
@@ -60,7 +56,6 @@ public class Extract {
             conn.updateProcessStatus(prop.get(PROP_PROCESS_EXTRACT), prop.get(PROP_FAIL_EXTRACT));
             return;
         }
-
         // 10. Write data to .csv file.
         File newFile = writeDataToCsv(config, data);
         if (newFile == null) {
@@ -97,47 +92,8 @@ public class Extract {
     }
 
     private static String crawlData(Config config, String[] args) {
-        try {
-            String date = args.length > 0 ? args[0] : new SimpleDateFormat(config.dateFormat).format(System.currentTimeMillis());
-
-            Document document = Jsoup
-                    .connect(config.sourceUrl + date + config.sourceSuffix)
-                    .userAgent(config.userAgent)
-                    .get();
-
-            StringBuilder sb = new StringBuilder();
-
-            String dow = Utils.getDayOfWeek(config.dateFormat, date);
-            var tableResult = document.getElementsByClass("table-result");
-            for (int i = 0; i < 3; i++) {
-                var table = tableResult.get(i);
-                if (i == 0) {
-                    var rows = table.select("tbody tr:not(:first-child)");
-                    for (var row : rows) {
-                        String prizeName = Utils.getPrizeName(row.select("td:first-child").text());
-                        String prizes = row.select("td:last-child").text();
-                        if (prizes.contains(" ")) prizes = String.format("\"%s\"", prizes);
-                        sb.append(String.join(config.fileDelimiter, date, dow, "Miền Bắc", "", prizeName, prizes)).append("\n");
-                    }
-                } else {
-                    var provinces = table.select("thead th:not(:first-child)");
-                    for (int j = 0; j < provinces.size(); j++) {
-                        var rows = table.select("tbody tr");
-                        for (int k = rows.size() - 1; k >= 0; k--) {
-                            var row = rows.get(k);
-                            String prizeName = Utils.getPrizeName(Objects.requireNonNull(row.selectFirst("th")).text());
-                            String prizes = row.select("td").get(j).text();
-                            if (prizes.contains(" ")) prizes = String.format("\"%s\"", prizes);
-                            sb.append(String.join(config.fileDelimiter, date, dow, i == 1 ? "Miền Nam" : "Miền Trung",
-                                    provinces.get(j).text(), prizeName, prizes)).append("\n");
-                        }
-                    }
-                }
-            }
-            return sb.toString();
-        } catch (Exception e) {
-            return null;
-        }
+        var crawler = new Crawler();
+        return crawler.crawl(config, args);
     }
 
     private static File writeDataToCsv(Config config, String data) {
@@ -145,13 +101,12 @@ public class Extract {
             String formattedDateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern(config.filePattern));
             String filePath = config.fileDestination + formattedDateTime + config.fileFormat;
             File file = new File(filePath);
-            if (file.getParentFile().mkdirs()) {
-                var pw = new PrintWriter(file);
-                pw.write(data);
-                pw.close();
-            }
+            file.getParentFile().mkdirs();
+            var pw = new PrintWriter(file, StandardCharsets.UTF_8);
+            pw.write(data);
+            pw.close();
             return file;
-        } catch (FileNotFoundException e) {
+        } catch (Exception e) {
             return null;
         }
     }

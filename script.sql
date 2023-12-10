@@ -24,7 +24,7 @@ CREATE TABLE process_control
 );
 
 INSERT INTO config
-VALUES (1, 'https://xoso.com.vn/kqxs-', '.html', '.csv', 'ddMMyyyy_HHmmss', 'D://extract/', ',', 'dd-MM-yyyy',
+VALUES (1, 'https://xoso.com.vn/kqxs-', '.html', '.csv', 'ddMMyyyy_HHmmss', 'D://DW/extract/', ',', 'dd-MM-yyyy',
         'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.0)', 'Configuration info');
 
 UPDATE process_control
