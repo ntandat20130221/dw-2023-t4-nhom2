@@ -67,7 +67,8 @@ public class DatabaseConnection {
 
     public void updateProcessStatus(String processName, String status) {
         try {
-            var stm = conn.prepareStatement("UPDATE process_control SET status = ? WHERE process_name = ?");
+            var stm = conn.prepareStatement("UPDATE process_control SET status = ?, start_time = datetime('now', 'localtime') " +
+                    "WHERE process_name = ?");
             stm.setString(1, status);
             stm.setString(2, processName);
             stm.execute();
