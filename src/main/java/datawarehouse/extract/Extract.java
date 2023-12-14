@@ -63,20 +63,30 @@ public class Extract {
             return;
         }
 
-        // 10. Write data to .csv file.
-        File newFile = writeDataToCsv(config, data);
+        var file = new File(getFilePath(config));
+        if (!file.exists()) {
+            // 10. If the folder doesn't exist, create a new one.
+            if (!file.getParentFile().mkdirs()) {
+                conn.updateProcessStatus(prop.get(PROP_PROCESS_EXTRACT), prop.get(PROP_FAIL_EXTRACT));
+                return;
+            }
+        }
+
+        // 11. Write data to .csv file.
+        File newFile = writeDataToCsv(file, data);
         if (newFile == null) {
+            // 12. If writing is failed, update process status to FAIL_EXTRACT.
             conn.updateProcessStatus(prop.get(PROP_PROCESS_EXTRACT), prop.get(PROP_FAIL_EXTRACT));
             return;
         }
 
-        // 11. Delete other .csv files.
+        // 13. Delete other .csv files.
         deleteOtherCsvFiles(config, newFile);
 
-        // 12. Update process status to COMPLETE_EXTRACT.
+        // 14. Update process status to COMPLETE_EXTRACT.
         conn.updateProcessStatus(prop.get(PROP_PROCESS_EXTRACT), prop.get(PROP_COMPLETE_EXTRACT));
 
-        // 13. Close control database.
+        // 15. Close control database.
         conn.close();
     }
 
@@ -103,12 +113,13 @@ public class Extract {
         return crawler.crawl(config, date);
     }
 
-    private static File writeDataToCsv(Config config, String data) {
+    private static String getFilePath(Config config) {
+        String formattedDateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern(config.filePattern));
+        return config.fileDestination + formattedDateTime + config.fileFormat;
+    }
+
+    private static File writeDataToCsv(File file, String data) {
         try {
-            String formattedDateTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern(config.filePattern));
-            String filePath = config.fileDestination + formattedDateTime + config.fileFormat;
-            File file = new File(filePath);
-            file.getParentFile().mkdirs();
             var pw = new PrintWriter(file, StandardCharsets.UTF_8);
             pw.write(data);
             pw.close();
