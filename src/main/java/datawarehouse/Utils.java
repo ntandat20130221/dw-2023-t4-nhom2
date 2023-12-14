@@ -14,6 +14,14 @@ public class Utils {
                 && today.get(Calendar.YEAR) == specifiedDate.get(Calendar.YEAR);
     }
 
+    public static int tryParseInt(String value) {
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            return -1;
+        }
+    }
+
     public static String getPrizeName(String prize) {
         return switch (prize) {
             case "ĐB" -> "Giải đặc biệt";
