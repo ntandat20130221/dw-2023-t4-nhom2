@@ -14,9 +14,11 @@ public class DatabaseConnection {
         conn = DriverManager.getConnection(url);
     }
 
-    public Config getConfig() {
+    public Config getConfig(int sourceId) {
         try {
-            var rs = conn.createStatement().executeQuery("SELECT * FROM config");
+            var stm = conn.prepareStatement("SELECT * FROM config WHERE id = ?");
+            stm.setInt(1, sourceId);
+            var rs = stm.executeQuery();
             if (rs.next()) {
                 int id = rs.getInt(1);
                 String sourceUrl = rs.getString(2);

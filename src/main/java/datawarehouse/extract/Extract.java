@@ -1,5 +1,6 @@
 package datawarehouse.extract;
 
+import datawarehouse.ArgumentManagerImpl;
 import datawarehouse.DatabaseConnection;
 import datawarehouse.PropertyManager;
 import datawarehouse.Utils;
@@ -11,6 +12,7 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
@@ -45,17 +47,22 @@ public class Extract {
                 conn.updateProcessStatus(prop.get(PROP_PROCESS_EXTRACT), prop.get(PROP_BEGIN_EXTRACT));
             }
         }
+
         // 7. Read config data from config table.
-        var config = conn.getConfig();
+        var arg = new ArgumentManagerImpl(args);
+        int sourceId = arg.getSourceId() != -1 ? arg.getSourceId() : Utils.tryParseInt(prop.get(PROP_SOURCE_ID));
+        var config = conn.getConfig(sourceId);
         if (config == null) return;
 
         // 8. Using config to crawl data from source.
-        String data = crawlData(config, args);
+        String date = arg.getDate() == null ? new SimpleDateFormat(config.dateFormat).format(System.currentTimeMillis()) : arg.getDate();
+        String data = crawlData(config, date);
         if (data == null) {
             // 9. If crawling is failed, update process status to FAIL_EXTRACT.
             conn.updateProcessStatus(prop.get(PROP_PROCESS_EXTRACT), prop.get(PROP_FAIL_EXTRACT));
             return;
         }
+
         // 10. Write data to .csv file.
         File newFile = writeDataToCsv(config, data);
         if (newFile == null) {
@@ -91,9 +98,9 @@ public class Extract {
         }
     }
 
-    private static String crawlData(Config config, String[] args) {
-        var crawler = new Crawler();
-        return crawler.crawl(config, args);
+    private static String crawlData(Config config, String date) {
+        var crawler = new CrawlerImpl();
+        return crawler.crawl(config, date);
     }
 
     private static File writeDataToCsv(Config config, String data) {
