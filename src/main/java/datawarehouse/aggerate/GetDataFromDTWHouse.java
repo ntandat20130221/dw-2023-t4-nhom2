@@ -49,7 +49,5 @@ public class GetDataFromDTWHouse {
 
         return xoSoResults;
     }
-    public static String messNotFind(){
-        return "không tìm thấy thông tin cần trích xuất";
-    }
+
 }

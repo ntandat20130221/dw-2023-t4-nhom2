@@ -1,13 +1,17 @@
 package datawarehouse.aggerate;
 import datawarehouse.DatabaseConnection;
+import datawarehouse.PropertyManager;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
+import static datawarehouse.PropertyManager.*;
+
 public class ConnectAggregate {
     private static DatabaseConnection db;
+    private static PropertyManager prop;
     private static int lastInsertedProvinceId = -1;
     private static int lastInsertedRegionId = -1;
     private static int lastInsertedResultDateId = -1;
@@ -20,15 +24,16 @@ public class ConnectAggregate {
             return false;
         }
     }
-    public static void insertXoSoResult(XoSoResult xoSoResult) {
+    public static boolean insertXoSoResult(XoSoResult xoSoResult) {
         try {
             storeDimRegion(xoSoResult);
             storeDimProvince(xoSoResult);
             storeDimResultDate(xoSoResult);
             storeDimPrize(xoSoResult);
             storeFactXoSoResults(xoSoResult);
+            return true;
         } catch (SQLException e) {
-            e.printStackTrace();
+            return false;
         }
     }
 
@@ -108,16 +113,22 @@ public class ConnectAggregate {
     }
 
     public static void main(String[] args) {
+
         GetDataFromDTWHouse.connectDatabase();
         ArrayList<XoSoResult> xoSoResults = GetDataFromDTWHouse.getXoSoResults();
         if(xoSoResults.size()< 1 ) {
-            GetDataFromDTWHouse.messNotFind();
+            ConnectAggregate.db.insertProcess(prop.get(PROP_LOAD_AGGREGATE), prop.get(PROP_FAIL_AGGREGATE));
             return;
         }
         ConnectAggregate.connectDatabase();
         for (XoSoResult xoSoResult : xoSoResults) {
-            System.out.println(xoSoResult);
-            ConnectAggregate.insertXoSoResult(xoSoResult);
+            boolean success = ConnectAggregate.insertXoSoResult(xoSoResult);
+
+            if (!success) {
+                ConnectAggregate.db.insertProcess(prop.get(PROP_LOAD_AGGREGATE), prop.get(PROP_FAIL_AGGREGATE));
+                return;
+            }
         }
+        ConnectAggregate.db.insertProcess(prop.get(PROP_LOAD_AGGREGATE), prop.get(PROP_COMPLETE_AGGREGATE));
     }
 }

@@ -14,7 +14,10 @@ public class PropertyManager {
     public static final String PROP_ARG_SOURCE_ID = "arg_source_id";
     public static final String PROP_PROCESS_EXTRACT = "process_extract";
     public static final String PROP_BEGIN_EXTRACT = "begin_extract";
+    public static final String PROP_LOAD_AGGREGATE = "load_aggregate";
     public static final String PROP_FAIL_EXTRACT = "fail_extract";
+    public static final String PROP_FAIL_AGGREGATE = "fail_aggregate";
+    public static final String PROP_COMPLETE_AGGREGATE = "complete_aggregate";
     public static final String PROP_COMPLETE_EXTRACT = "complete_extract";
     public static final String PROP_DMT = "=";
 
